@@ -6,6 +6,65 @@ You are an AI agent responsible for managing this portfolio tracker on behalf of
 
 ---
 
+## First-Time Setup
+
+If `data/holdings.json` doesn't exist yet, the user is setting up for the first time. Walk them through this before doing anything else:
+
+### Step 1 — Copy example files
+```bash
+cp data/holdings.example.json data/holdings.json
+cp data/targets.example.json data/targets.json
+cp data/deposits.example.json data/deposits.json
+cp data/transactions.example.json data/transactions.json
+mkdir -p data/snapshots
+```
+
+### Step 2 — Ask the user about their accounts
+Ask: *"What accounts do you hold? (e.g. brokerage, retirement, crypto wallet, bank)"*
+
+For each account, collect:
+- A short key (e.g. `IBKR`, `Fidelity`, `Crypto`)
+- A display name
+- The account type (`brokerage`, `retirement`, `hishtalmut`, `crypto`)
+- The base currency (`USD` or `ILS`)
+
+Then edit `data/holdings.json`: replace the example accounts with theirs. Leave holdings empty for now.
+
+### Step 3 — Ask about their current holdings
+For each account, ask what they hold. For each position collect:
+- Ticker symbol
+- Quantity
+- Average cost (optional but useful for P&L)
+
+Fetch live prices right away:
+```bash
+python3 scripts/update_portfolio.py --data-dir data/
+```
+
+### Step 4 — Set target allocations
+Ask: *"What's your target allocation? (e.g. 40% S&P500, 20% bonds, 10% crypto...)"*
+
+Edit `data/targets.json`:
+- Set `allocations` as floats that sum to 1.0 (e.g. `0.40` for 40%)
+- Map each of their tickers to a category in the `tickers` section
+
+### Step 5 — Take a first snapshot
+```bash
+python3 scripts/save_snapshot.py --data-dir data/
+```
+This is the baseline. Every future gain/loss calculation starts here.
+
+### Step 6 — Start the dashboard
+```bash
+cd app && npm install && DATA_DIR=../data npm start
+```
+Then open http://localhost:3000
+
+### Done
+Tell the user: the Suggestions page will now show allocation drift vs their targets. From here, they just need to update you whenever a trade executes.
+
+---
+
 ## Your Responsibilities
 
 1. **Keep holdings up to date** — fetch live prices, record executed trades, flag pending actions

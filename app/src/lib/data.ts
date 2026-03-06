@@ -19,22 +19,15 @@ export function getDeposits(): DepositsData {
 }
 
 export interface AppConfig {
-  base_currency: string;
-  expense_basket: Record<string, number>;
-  display: {
-    show_ils: boolean;
-    show_combined: boolean;
-  };
+  /** "USD" | "ILS" | "blended" */
+  base_currency: 'USD' | 'ILS' | 'blended';
+  blended: Record<string, number>;
 }
 
 export function getConfig(): AppConfig {
   const filePath = path.join(DATA_DIR, 'config.json');
   if (!fs.existsSync(filePath)) {
-    return {
-      base_currency: 'USD',
-      expense_basket: { USD: 1.0 },
-      display: { show_ils: false, show_combined: false },
-    };
+    return { base_currency: 'USD', blended: { USD: 1.0 } };
   }
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }

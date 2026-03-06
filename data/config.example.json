@@ -1,10 +1,7 @@
 {
   "base_currency": "USD",
-  "expense_basket": {
-    "USD": 1.0
-  },
-  "display": {
-    "show_ils": false,
-    "show_combined": false
+  "blended": {
+    "USD": 0.50,
+    "ILS": 0.50
   }
 }

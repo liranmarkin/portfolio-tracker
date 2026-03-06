@@ -58,15 +58,32 @@ export default function Dashboard() {
   const targets = getTargets();
   const config = getConfig();
 
-  // Combined basket value: weighted blend of USD + ILS
-  const basket = config.expense_basket;
-  const combinedValue = Object.entries(basket).reduce((sum, [currency, weight]) => {
-    if (currency === 'USD') return sum + portfolio.total_value_usd * weight;
-    if (currency === 'ILS') return sum + (portfolio.total_value_ils / portfolio.exchange_rate.usd_to_ils) * weight;
-    return sum;
-  }, 0);
-  const showCombined = config.display.show_combined && Object.keys(basket).length > 1;
-  const showIls = config.display.show_ils;
+  // Compute display value based on base_currency setting
+  const rate = portfolio.exchange_rate.usd_to_ils;
+  let primaryValue: number;
+  let primaryLabel: string;
+  let primaryFormatter: (v: number) => string;
+
+  if (config.base_currency === 'ILS') {
+    primaryValue = portfolio.total_value_ils;
+    primaryLabel = 'Total Portfolio Value';
+    primaryFormatter = (v) => `₪${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  } else if (config.base_currency === 'blended') {
+    primaryValue = Object.entries(config.blended).reduce((sum, [currency, weight]) => {
+      if (currency === 'USD') return sum + portfolio.total_value_usd * weight;
+      if (currency === 'ILS') return sum + (portfolio.total_value_ils / rate) * weight;
+      return sum;
+    }, 0);
+    const blendLabel = Object.entries(config.blended)
+      .map(([c, w]) => `${Math.round(w * 100)}% ${c}`)
+      .join(' + ');
+    primaryLabel = `Total Value (${blendLabel})`;
+    primaryFormatter = formatUSD;
+  } else {
+    primaryValue = portfolio.total_value_usd;
+    primaryLabel = 'Total Portfolio Value';
+    primaryFormatter = formatUSD;
+  }
 
   const chartData = [
     ...snapshots.map(s => ({
@@ -94,21 +111,19 @@ export default function Dashboard() {
       <div>
         <div className="flex items-baseline gap-6 flex-wrap">
           <div>
-            <p className="text-sm text-zinc-500 mb-1">Total Portfolio Value</p>
-            <p className="text-4xl font-bold tracking-tight">{formatUSD(portfolio.total_value_usd)}</p>
+            <p className="text-sm text-zinc-500 mb-1">{primaryLabel}</p>
+            <p className="text-4xl font-bold tracking-tight">{primaryFormatter(primaryValue)}</p>
           </div>
-          {showIls && (
+          {config.base_currency !== 'USD' && (
             <div>
               <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
-              <p className="text-2xl font-semibold text-zinc-400">{formatILS(portfolio.total_value_ils)}</p>
+              <p className="text-2xl font-semibold text-zinc-400">{formatUSD(portfolio.total_value_usd)}</p>
             </div>
           )}
-          {showCombined && (
+          {config.base_currency !== 'ILS' && (
             <div>
-              <p className="text-sm text-zinc-500 mb-1">
-                Combined ({Object.entries(basket).map(([c, w]) => `${Math.round(w * 100)}% ${c}`).join(' + ')})
-              </p>
-              <p className="text-2xl font-semibold text-amber-400">{formatUSD(combinedValue)}</p>
+              <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
+              <p className="text-2xl font-semibold text-zinc-500">{formatILS(portfolio.total_value_ils)}</p>
             </div>
           )}
         </div>

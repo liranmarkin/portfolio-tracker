@@ -32,6 +32,28 @@ portfolio-tracker/
 
 ---
 
+## How It's Meant to Be Used
+
+The intended workflow is **you talk, a coding agent does the work.**
+
+Spin up Claude Code, Codex, Cursor, or any coding agent in the root of this repo. The agent reads `AGENTS.md` for its operating instructions — how to update holdings after trades, log transactions, take snapshots, and run scripts. You tell it what happened ("I sold 50 IBIT today, reinvested into IAU") and it handles the data.
+
+```bash
+# Example: open Claude Code in this repo
+claude --dangerously-skip-permissions  # or however you launch your agent
+```
+
+The agent will:
+- Update `data/holdings.json` after trades execute
+- Log to `data/transactions.json` (only confirmed fills)
+- Run `scripts/update_portfolio.py` to refresh prices
+- Take snapshots before/after major events
+- Tell you what the Suggestions page is flagging
+
+You stay focused on decisions. The agent keeps the data honest.
+
+---
+
 ## Quick Start
 
 ```bash

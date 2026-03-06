@@ -1,4 +1,4 @@
-import { getPortfolio, getSnapshots, getDeposits } from '@/lib/data';
+import { getPortfolio, getSnapshots, getDeposits, getConfig } from '@/lib/data';
 import { formatUSD, formatDate, pnlColor } from '@/lib/format';
 import { HistoryChart } from '@/components/charts/HistoryChart';
 
@@ -8,6 +8,27 @@ export default function HistoryPage() {
   const portfolio = getPortfolio();
   const snapshots = getSnapshots();
   const deposits = getDeposits();
+  const config = getConfig();
+  const rate = portfolio.exchange_rate.usd_to_ils;
+
+  // Format a USD value in the configured base currency
+  function fmt(usd: number, sign = false): string {
+    const prefix = sign && usd >= 0 ? '+' : '';
+    if (config.base_currency === 'ILS') {
+      return `${prefix}₪${Math.round(usd * rate).toLocaleString('en-US')}`;
+    }
+    if (config.base_currency === 'blended') {
+      const parts = Object.entries(config.blended).map(([currency, weight]) => {
+        const val = currency === 'ILS' ? usd * rate * weight : usd * weight;
+        const p = sign && val >= 0 ? '+' : val < 0 ? '' : '';
+        return currency === 'ILS'
+          ? `${p}₪${Math.round(val).toLocaleString('en-US')}`
+          : `${p}${formatUSD(val)}`;
+      });
+      return parts.join(' + ');
+    }
+    return `${prefix}${formatUSD(usd)}`;
+  }
 
   const chartData = [
     ...snapshots.map(s => ({
@@ -22,13 +43,11 @@ export default function HistoryPage() {
     chartData.push({ date: today, value: Math.round(portfolio.total_value_usd) });
   }
 
-  // Build a map of deposits by date
   const depositsByDate: Record<string, number> = {};
   for (const d of deposits.deposits) {
     depositsByDate[d.date] = (depositsByDate[d.date] || 0) + d.amount_usd;
   }
 
-  // Period changes with deposits separated out
   const changes: {
     from: string; to: string;
     startValue: number; endValue: number;
@@ -40,7 +59,6 @@ export default function HistoryPage() {
     const startValue = chartData[i - 1].value;
     const endValue = chartData[i].value;
     const totalChange = endValue - startValue;
-    // Sum deposits that fall within this period
     const deposited = Object.entries(depositsByDate)
       .filter(([date]) => date > chartData[i - 1].date && date <= chartData[i].date)
       .reduce((sum, [, amt]) => sum + amt, 0);
@@ -49,7 +67,6 @@ export default function HistoryPage() {
     changes.push({ from: chartData[i - 1].date, to: chartData[i].date, startValue, endValue, totalChange, deposited, marketGain, marketGainPct });
   }
 
-  // Deposits vs market gains
   const totalDeposited = deposits.summary.total_deposited_usd;
   const firstValue = snapshots.length > 0 ? snapshots[0].total_value_usd : portfolio.total_value_usd;
   const totalGrowth = portfolio.total_value_usd - firstValue;
@@ -65,16 +82,12 @@ export default function HistoryPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800">
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Capital Deposited</p>
-          <p className="text-2xl font-bold text-blue-400">
-            +{formatUSD(totalDeposited)}
-          </p>
+          <p className="text-2xl font-bold text-blue-400">{fmt(totalDeposited, true)}</p>
           <p className="text-xs text-zinc-500 mt-1">{deposits.deposits.length} deposit(s) tracked</p>
         </div>
         <div className="bg-zinc-900 rounded-xl p-5 border border-zinc-800">
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Market Gains</p>
-          <p className={`text-2xl font-bold ${pnlColor(marketGains)}`}>
-            {marketGains >= 0 ? '+' : ''}{formatUSD(marketGains)}
-          </p>
+          <p className={`text-2xl font-bold ${pnlColor(marketGains)}`}>{fmt(marketGains, true)}</p>
           <p className="text-xs text-zinc-500 mt-1">Growth minus deposits</p>
         </div>
       </div>
@@ -101,13 +114,13 @@ export default function HistoryPage() {
                 <td className="px-5 py-2.5 text-zinc-300">
                   {formatDate(c.from)} &rarr; {formatDate(c.to)}
                 </td>
-                <td className="text-right px-5 py-2.5 text-zinc-400 tabular-nums">{formatUSD(c.startValue)}</td>
-                <td className="text-right px-5 py-2.5 tabular-nums">{formatUSD(c.endValue)}</td>
+                <td className="text-right px-5 py-2.5 text-zinc-400 tabular-nums">{fmt(c.startValue)}</td>
+                <td className="text-right px-5 py-2.5 tabular-nums">{fmt(c.endValue)}</td>
                 <td className="text-right px-5 py-2.5 text-blue-400 tabular-nums">
-                  {c.deposited > 0 ? `+${formatUSD(c.deposited)}` : '—'}
+                  {c.deposited > 0 ? fmt(c.deposited, true) : '—'}
                 </td>
                 <td className={`text-right px-5 py-2.5 font-medium tabular-nums ${pnlColor(c.marketGain)}`}>
-                  {c.marketGain >= 0 ? '+' : ''}{formatUSD(c.marketGain)}
+                  {fmt(c.marketGain, true)}
                 </td>
                 <td className={`text-right px-5 py-2.5 font-bold tabular-nums ${pnlColor(c.marketGain)}`}>
                   {c.marketGainPct >= 0 ? '+' : ''}{c.marketGainPct.toFixed(1)}%
@@ -129,7 +142,7 @@ export default function HistoryPage() {
               <th className="text-left px-5 py-2.5">Date</th>
               <th className="text-left px-5 py-2.5">Account</th>
               <th className="text-left px-5 py-2.5">Ticker</th>
-              <th className="text-right px-5 py-2.5">Amount (USD)</th>
+              <th className="text-right px-5 py-2.5">Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/50">
@@ -139,7 +152,7 @@ export default function HistoryPage() {
                 <td className="px-5 py-2.5">{d.account}</td>
                 <td className="px-5 py-2.5 font-medium">{d.ticker}</td>
                 <td className="text-right px-5 py-2.5 text-blue-400 font-medium tabular-nums">
-                  +{formatUSD(d.amount_usd)}
+                  {fmt(d.amount_usd, true)}
                 </td>
               </tr>
             ))}

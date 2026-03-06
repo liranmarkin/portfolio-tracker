@@ -1,11 +1,28 @@
-import { getPortfolio } from '@/lib/data';
+import { getPortfolio, getConfig } from '@/lib/data';
 import { formatUSD, formatUSDPrecise, formatILS, pnlColor, accountTypeBadgeColor, accountTypeLabel } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
 export default function HoldingsPage() {
   const portfolio = getPortfolio();
+  const config = getConfig();
   const rate = portfolio.exchange_rate.usd_to_ils;
+
+  // Format account total in base currency
+  function formatAccountTotal(totalUsd: number) {
+    if (config.base_currency === 'ILS') {
+      return `₪${Math.round(totalUsd * rate).toLocaleString('en-US')}`;
+    }
+    if (config.base_currency === 'blended') {
+      const parts = Object.entries(config.blended).map(([currency, weight]) => {
+        if (currency === 'USD') return formatUSD(totalUsd * weight);
+        if (currency === 'ILS') return `₪${Math.round(totalUsd * rate * weight).toLocaleString('en-US')}`;
+        return '';
+      });
+      return parts.join(' + ');
+    }
+    return formatUSD(totalUsd);
+  }
 
   return (
     <div className="space-y-6">
@@ -21,7 +38,7 @@ export default function HoldingsPage() {
               </span>
             </div>
             <div className="text-right">
-              <p className="text-lg font-semibold">{formatUSD(account.total_value)}</p>
+              <p className="text-lg font-semibold">{formatAccountTotal(account.total_value)}</p>
               <p className="text-xs text-zinc-500">{account.percentage.toFixed(1)}% of portfolio</p>
             </div>
           </div>

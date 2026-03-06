@@ -1,7 +1,10 @@
 'use client';
 
+'use client';
+
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { formatUSD, formatPercent } from '@/lib/format';
+import type { AppConfig } from '@/lib/data';
 
 interface Slice {
   name: string;
@@ -11,10 +14,24 @@ interface Slice {
 
 const COLORS = ['#34d399', '#60a5fa', '#f59e0b', '#a78bfa', '#f87171', '#2dd4bf', '#fb923c', '#818cf8'];
 
-export function AllocationDonut({ data, title, formatValue }: {
+function fmtSlice(usd: number, name: string, slice: Slice | undefined, config?: AppConfig, rate?: number, cashIls?: Record<string, number>): string {
+  // Cash: always show native ILS if available
+  if (slice?.nativeLabel) return slice.nativeLabel;
+  if (!config || !rate) return formatUSD(usd);
+  if (config.base_currency === 'blended') {
+    return Object.entries(config.blended)
+      .map(([c, w]) => c === 'ILS' ? `₪${Math.round(usd * rate * w).toLocaleString('en-US')}` : formatUSD(usd * w))
+      .join(' + ');
+  }
+  if (config.base_currency === 'ILS') return `₪${Math.round(usd * rate).toLocaleString('en-US')}`;
+  return formatUSD(usd);
+}
+
+export function AllocationDonut({ data, title, config, rate }: {
   data: Slice[];
   title: string;
-  formatValue?: (value: number, name: string) => string;
+  config?: AppConfig;
+  rate?: number;
 }) {
   return (
     <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
@@ -47,12 +64,7 @@ export function AllocationDonut({ data, title, formatValue }: {
               itemStyle={{ color: '#18181b' }}
               formatter={(value, name) => {
                 const slice = data.find(d => d.name === name);
-                const label = slice?.nativeLabel
-                  ? slice.nativeLabel
-                  : formatValue
-                    ? formatValue(value as number, name as string)
-                    : formatUSD(value as number);
-                return [label, name as string];
+                return [fmtSlice(value as number, name as string, slice, config, rate), name as string];
               }}
             />
             <Legend

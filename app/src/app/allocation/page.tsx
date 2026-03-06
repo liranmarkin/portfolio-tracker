@@ -82,18 +82,7 @@ export default function AllocationPage() {
     }
   }
 
-  function categoryFmt(usdValue: number, name: string): string {
-    if (name === 'Cash' && categoryIls[name] !== undefined) {
-      return `₪${Math.round(categoryIls[name]).toLocaleString('en-US')}`;
-    }
-    if (config.base_currency === 'blended') {
-      return Object.entries(config.blended)
-        .map(([c, w]) => c === 'ILS' ? `₪${Math.round(usdValue * rate * w).toLocaleString('en-US')}` : formatUSD(usdValue * w))
-        .join(' + ');
-    }
-    if (config.base_currency === 'ILS') return `₪${Math.round(usdValue * rate).toLocaleString('en-US')}`;
-    return formatUSD(usdValue);
-  }
+  // Cash slices get nativeLabel with actual ILS; AllocationDonut uses config+rate for others
 
   // Build category allocation data
   const catBuckets: Record<string, number> = {};
@@ -105,7 +94,13 @@ export default function AllocationPage() {
     }
   }
   const categoryData = Object.entries(catBuckets)
-    .map(([name, value]) => ({ name, value: Math.round(value) }))
+    .map(([name, value]) => ({
+      name,
+      value: Math.round(value),
+      nativeLabel: name === 'Cash' && categoryIls[name] !== undefined
+        ? `₪${Math.round(categoryIls[name]).toLocaleString('en-US')}`
+        : undefined,
+    }))
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -113,8 +108,8 @@ export default function AllocationPage() {
       <h1 className="text-2xl font-bold">Allocation</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AllocationDonut data={categoryData} title="Allocation by Asset Type" formatValue={categoryFmt} />
-        <AllocationDonut data={tickerData} title="Allocation by Ticker" formatValue={categoryFmt} />
+        <AllocationDonut data={categoryData} title="Allocation by Asset Type" config={config} rate={rate} />
+        <AllocationDonut data={tickerData} title="Allocation by Ticker" config={config} rate={rate} />
         <AccountBar data={accountData} />
       </div>
 

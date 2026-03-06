@@ -6,11 +6,16 @@ import { formatUSD, formatPercent } from '@/lib/format';
 interface Slice {
   name: string;
   value: number;
+  nativeLabel?: string; // pre-formatted override for tooltip
 }
 
 const COLORS = ['#34d399', '#60a5fa', '#f59e0b', '#a78bfa', '#f87171', '#2dd4bf', '#fb923c', '#818cf8'];
 
-export function AllocationDonut({ data, title }: { data: Slice[]; title: string }) {
+export function AllocationDonut({ data, title, formatValue }: {
+  data: Slice[];
+  title: string;
+  formatValue?: (value: number, name: string) => string;
+}) {
   return (
     <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
       <h3 className="text-sm font-medium text-zinc-400 mb-4">{title}</h3>
@@ -40,7 +45,15 @@ export function AllocationDonut({ data, title }: { data: Slice[]; title: string 
               }}
               labelStyle={{ color: '#18181b', fontWeight: 600 }}
               itemStyle={{ color: '#18181b' }}
-              formatter={(value, name) => [formatUSD(value as number), name as string]}
+              formatter={(value, name) => {
+                const slice = data.find(d => d.name === name);
+                const label = slice?.nativeLabel
+                  ? slice.nativeLabel
+                  : formatValue
+                    ? formatValue(value as number, name as string)
+                    : formatUSD(value as number);
+                return [label, name as string];
+              }}
             />
             <Legend
               formatter={(value: string, entry) => {

@@ -1,4 +1,5 @@
-import { getPortfolio, getTargets } from '@/lib/data';
+import { getPortfolio, getTargets, getConfig } from '@/lib/data';
+import { formatUSD } from '@/lib/format';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
 import { AccountBar } from '@/components/charts/AccountBar';
 import { TargetVsActual } from '@/components/charts/TargetVsActual';
@@ -6,20 +7,30 @@ import type { PortfolioData } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-function getTickerAllocation(portfolio: PortfolioData) {
-  const buckets: Record<string, number> = {};
+function getTickerAllocation(portfolio: PortfolioData, targets: { tickers: Record<string, string> }) {
+  const bucketsUsd: Record<string, number> = {};
+  const bucketsIls: Record<string, number> = {};
   const rate = portfolio.exchange_rate.usd_to_ils;
   for (const account of Object.values(portfolio.accounts)) {
     for (const [ticker, holding] of Object.entries(account.holdings)) {
       const label = holding.name ? `${ticker.split('_')[0]}` : ticker;
-      const usdValue = holding.currency === 'ILS'
-        ? holding.value / rate
-        : holding.value;
-      buckets[label] = (buckets[label] || 0) + usdValue;
+      const cat = targets.tickers[ticker] ?? (ticker.includes('FUND') ? 'Cash' : 'Other');
+      const usdValue = holding.currency === 'ILS' ? holding.value / rate : holding.value;
+      bucketsUsd[label] = (bucketsUsd[label] || 0) + usdValue;
+      if (cat === 'Cash') {
+        const ilsValue = holding.currency === 'ILS' ? holding.value : holding.value * rate;
+        bucketsIls[label] = (bucketsIls[label] || 0) + ilsValue;
+      }
     }
   }
-  return Object.entries(buckets)
-    .map(([name, value]) => ({ name, value: Math.round(value) }))
+  return Object.entries(bucketsUsd)
+    .map(([name, value]) => ({
+      name,
+      value: Math.round(value),
+      nativeLabel: bucketsIls[name] !== undefined
+        ? `₪${Math.round(bucketsIls[name]).toLocaleString('en-US')}`
+        : undefined,
+    }))
     .sort((a, b) => b.value - a.value);
 }
 
@@ -53,16 +64,57 @@ function getTargetVsActual(portfolio: PortfolioData, targets: { allocations: Rec
 export default function AllocationPage() {
   const portfolio = getPortfolio();
   const targets = getTargets();
-  const tickerData = getTickerAllocation(portfolio);
+  const config = getConfig();
+  const rate = portfolio.exchange_rate.usd_to_ils;
+  const tickerData = getTickerAllocation(portfolio, targets);
   const accountData = getAccountAllocation(portfolio);
   const targetVsActual = getTargetVsActual(portfolio, targets);
+
+  // Category → native ILS total (for Cash label in donut)
+  const categoryIls: Record<string, number> = {};
+  for (const account of Object.values(portfolio.accounts)) {
+    for (const [ticker, holding] of Object.entries(account.holdings)) {
+      const cat = targets.tickers[ticker] ?? (ticker.includes('FUND') ? 'Cash' : 'Other');
+      if (cat === 'Cash') {
+        const ils = holding.currency === 'ILS' ? holding.value : holding.value * rate;
+        categoryIls[cat] = (categoryIls[cat] || 0) + ils;
+      }
+    }
+  }
+
+  function categoryFmt(usdValue: number, name: string): string {
+    if (name === 'Cash' && categoryIls[name] !== undefined) {
+      return `₪${Math.round(categoryIls[name]).toLocaleString('en-US')}`;
+    }
+    if (config.base_currency === 'blended') {
+      return Object.entries(config.blended)
+        .map(([c, w]) => c === 'ILS' ? `₪${Math.round(usdValue * rate * w).toLocaleString('en-US')}` : formatUSD(usdValue * w))
+        .join(' + ');
+    }
+    if (config.base_currency === 'ILS') return `₪${Math.round(usdValue * rate).toLocaleString('en-US')}`;
+    return formatUSD(usdValue);
+  }
+
+  // Build category allocation data
+  const catBuckets: Record<string, number> = {};
+  for (const account of Object.values(portfolio.accounts)) {
+    for (const [ticker, holding] of Object.entries(account.holdings)) {
+      const cat = targets.tickers[ticker] ?? (ticker.includes('FUND') ? 'Cash' : 'Other');
+      const usdValue = holding.currency === 'ILS' ? holding.value / rate : holding.value;
+      catBuckets[cat] = (catBuckets[cat] || 0) + usdValue;
+    }
+  }
+  const categoryData = Object.entries(catBuckets)
+    .map(([name, value]) => ({ name, value: Math.round(value) }))
+    .sort((a, b) => b.value - a.value);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Allocation</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AllocationDonut data={tickerData} title="Allocation by Ticker" />
+        <AllocationDonut data={categoryData} title="Allocation by Asset Type" formatValue={categoryFmt} />
+        <AllocationDonut data={tickerData} title="Allocation by Ticker" formatValue={categoryFmt} />
         <AccountBar data={accountData} />
       </div>
 

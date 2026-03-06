@@ -1,4 +1,4 @@
-import { getPortfolio, getTransactions, getTargets } from '@/lib/data';
+import { getPortfolio, getTransactions, getTargets, getConfig, AppConfig } from '@/lib/data';
 import { formatUSD } from '@/lib/format';
 import type { PortfolioData } from '@/lib/types';
 
@@ -17,7 +17,22 @@ interface Suggestion {
 }
 
 // ─── Analysis ────────────────────────────────────────────────────────────────
-function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Record<string, number>; tickers: Record<string, string> }): Suggestion[] {
+function fmtBase(usd: number, config: AppConfig, rate: number, suffix = ''): string {
+  if (config.base_currency === 'ILS') {
+    return `₪${Math.round(usd * rate).toLocaleString('en-US')}${suffix}`;
+  }
+  if (config.base_currency === 'blended') {
+    const parts = Object.entries(config.blended).map(([currency, weight]) =>
+      currency === 'ILS'
+        ? `₪${Math.round(usd * rate * weight).toLocaleString('en-US')}`
+        : formatUSD(usd * weight)
+    );
+    return parts.join(' + ') + suffix;
+  }
+  return formatUSD(usd) + suffix;
+}
+
+function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Record<string, number>; tickers: Record<string, string> }, config: AppConfig): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const rate = portfolio.exchange_rate.usd_to_ils;
   const total = portfolio.total_value_usd;
@@ -46,7 +61,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
       category: 'action',
       title: `Pending sell: ${ps.ticker} @ ${ps.account}`,
       detail: `You have a pending sell order for ${ps.ticker}. Confirm execution and update holdings + transactions once filled.`,
-      amount: formatUSD(ps.value),
+      amount: fmtBase(ps.value, config, rate),
     });
   }
 
@@ -64,7 +79,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
         category: 'rebalance',
         title: `Underweight: ${cat} (${actualPct.toFixed(1)}% vs ${targetPct}% target)`,
         detail: `You're ${Math.abs(diffPct).toFixed(1)}% below target. Consider buying more ${cat} exposure.`,
-        amount: `${formatUSD(Math.abs(diffUsd))} to add`,
+        amount: fmtBase(Math.abs(diffUsd), config, rate, ' to add'),
       });
     } else if (diffPct > 5) {
       suggestions.push({
@@ -72,7 +87,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
         category: 'rebalance',
         title: `Overweight: ${cat} (${actualPct.toFixed(1)}% vs ${targetPct}% target)`,
         detail: `You're ${diffPct.toFixed(1)}% above target. Consider trimming ${cat} exposure.`,
-        amount: `${formatUSD(diffUsd)} to trim`,
+        amount: fmtBase(diffUsd, config, rate, ' to trim'),
       });
     }
   }
@@ -85,7 +100,6 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
       tickerValues[ticker] = (tickerValues[ticker] || 0) + usdValue;
     }
   }
-  // Index/diversified tickers — skip concentration check (they ARE the diversification)
   const indexTickers = new Set(Object.keys(targets.tickers));
   for (const [ticker, val] of Object.entries(tickerValues)) {
     const pct = (val / total) * 100;
@@ -95,7 +109,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
         category: 'risk',
         title: `Concentration risk: ${ticker} is ${pct.toFixed(1)}% of portfolio`,
         detail: `Single-stock/asset concentration above 15% increases idiosyncratic risk. Consider reducing ${ticker} position.`,
-        amount: formatUSD(val),
+        amount: fmtBase(val, config, rate),
       });
     }
   }
@@ -110,7 +124,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
       category: 'rebalance',
       title: `Cash drag: ${cashPct.toFixed(1)}% in cash/money market`,
       detail: `You have ${cashPct.toFixed(1)}% in cash vs ${cashTargetPct}% target. Consider deploying into your underweight categories.`,
-      amount: formatUSD((cashPct - cashTargetPct) / 100 * total),
+      amount: fmtBase((cashPct - cashTargetPct) / 100 * total, config, rate),
     });
   }
 
@@ -122,7 +136,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
       category: 'rebalance',
       title: 'No bonds exposure',
       detail: `Portfolio has no bonds. Target is ${(bondTargetFrac * 100).toFixed(0)}%. Adding IEF or similar provides a crash cushion and reduces correlation.`,
-      amount: `${formatUSD(total * bondTargetFrac)} target`,
+      amount: fmtBase(total * bondTargetFrac, config, rate, ' target'),
     });
   }
 
@@ -135,7 +149,7 @@ function analyzePorfolio(portfolio: PortfolioData, targets: { allocations: Recor
       category: 'risk',
       title: `High crypto exposure: ${cryptoPct.toFixed(1)}% of total`,
       detail: `Crypto volatility can cause 50%+ drawdowns. Your target is ${cryptoTargetPct.toFixed(0)}%. Consider hedging or gradual reduction.`,
-      amount: formatUSD(actual['Crypto'] || 0),
+      amount: fmtBase(actual['Crypto'] || 0, config, rate),
     });
   }
 
@@ -178,7 +192,8 @@ const CATEGORY_ICON: Record<SuggestionCategory, string> = {
 export default function SuggestionsPage() {
   const portfolio = getPortfolio();
   const targets = getTargets();
-  const suggestions = analyzePorfolio(portfolio, targets);
+  const config = getConfig();
+  const suggestions = analyzePorfolio(portfolio, targets, config);
 
   const high   = suggestions.filter(s => s.priority === 'high');
   const medium = suggestions.filter(s => s.priority === 'medium');

@@ -20,12 +20,11 @@ export default function HistoryPage() {
     if (config.base_currency === 'blended') {
       const parts = Object.entries(config.blended).map(([currency, weight]) => {
         const val = currency === 'ILS' ? usd * rate * weight : usd * weight;
-        const p = sign && val >= 0 ? '+' : val < 0 ? '' : '';
         return currency === 'ILS'
-          ? `${p}₪${Math.round(val).toLocaleString('en-US')}`
-          : `${p}${formatUSD(val)}`;
+          ? `₪${Math.round(val).toLocaleString('en-US')}`
+          : formatUSD(val);
       });
-      return parts.join(' + ');
+      return `${prefix}${parts.join(' + ')}`;
     }
     return `${prefix}${formatUSD(usd)}`;
   }

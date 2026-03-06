@@ -110,20 +110,40 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <div className="flex items-baseline gap-6 flex-wrap">
-          <div>
-            <p className="text-sm text-zinc-500 mb-1">{primaryLabel}</p>
-            <p className="text-4xl font-bold tracking-tight">{primaryFormatter(primaryValue)}</p>
-          </div>
-          {config.base_currency !== 'USD' && (
+          {config.base_currency === 'blended' ? (
+            <>
+              <div>
+                <p className="text-sm text-zinc-500 mb-1">Total Portfolio Value</p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  {Object.entries(config.blended).map(([currency, weight]) => (
+                    <span key={currency} className="text-4xl font-bold tracking-tight">
+                      {currency === 'USD'
+                        ? formatUSD(portfolio.total_value_usd * weight)
+                        : `₪${Math.round(portfolio.total_value_ils * weight).toLocaleString('en-US')}`}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-zinc-600 mt-1">
+                  {Object.entries(config.blended).map(([c, w]) => `${Math.round(w * 100)}% ${c}`).join(' + ')} of total
+                </p>
+              </div>
+            </>
+          ) : (
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">{primaryLabel}</p>
+              <p className="text-4xl font-bold tracking-tight">{primaryFormatter(primaryValue)}</p>
+            </div>
+          )}
+          {config.base_currency === 'USD' && (
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
+              <p className="text-2xl font-semibold text-zinc-400">{formatILS(portfolio.total_value_ils)}</p>
+            </div>
+          )}
+          {config.base_currency === 'ILS' && (
             <div>
               <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
               <p className="text-2xl font-semibold text-zinc-400">{formatUSD(portfolio.total_value_usd)}</p>
-            </div>
-          )}
-          {config.base_currency !== 'ILS' && (
-            <div>
-              <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
-              <p className="text-2xl font-semibold text-zinc-500">{formatILS(portfolio.total_value_ils)}</p>
             </div>
           )}
         </div>

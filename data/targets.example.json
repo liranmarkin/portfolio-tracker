@@ -1,0 +1,27 @@
+{
+  "allocations": {
+    "S&P500":        0.40,
+    "Bonds":         0.20,
+    "Crypto":        0.10,
+    "Gold":          0.10,
+    "International": 0.10,
+    "Cash":          0.10
+  },
+  "tickers": {
+    "IVV":   "S&P500",
+    "VOO":   "S&P500",
+    "SPY":   "S&P500",
+    "QQQ":   "S&P500",
+    "IEF":   "Bonds",
+    "TLT":   "Bonds",
+    "BND":   "Bonds",
+    "BTC":   "Crypto",
+    "ETH":   "Crypto",
+    "IAU":   "Gold",
+    "GLD":   "Gold",
+    "VXUS":  "International",
+    "EFA":   "International",
+    "USDC":  "Cash",
+    "USDT":  "Cash"
+  }
+}

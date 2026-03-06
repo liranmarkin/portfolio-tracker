@@ -1,0 +1,28 @@
+# Auth — auto-generated, never commit
+.auth_password
+
+# Virtual environment
+venv/
+
+# Real holdings data — stored in your private repo, not here
+data/holdings.json
+data/snapshots/*.json
+!data/snapshots/example.json
+data/deposits.json
+data/transactions.json
+data/targets.json
+data/portfolio_analysis*.json
+web/data.json
+
+# Next.js app build artifacts
+app/.next/
+app/node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Misc
+.DS_Store
+*.swp

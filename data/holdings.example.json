@@ -1,0 +1,75 @@
+{
+  "last_updated": "2026-01-01T00:00:00+00:00",
+  "total_value_usd": 0,
+  "exchange_rate": {
+    "usd_to_ils": 3.7,
+    "ils_to_usd": 0.27,
+    "note": "Only needed if you hold ILS-denominated assets"
+  },
+  "accounts": {
+    "Brokerage": {
+      "name": "My Brokerage",
+      "type": "brokerage",
+      "holdings": {
+        "IVV": {
+          "quantity": 10,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD",
+          "note": "S&P 500 ETF"
+        },
+        "QQQ": {
+          "quantity": 5,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD",
+          "note": "Nasdaq 100 ETF"
+        },
+        "IAU": {
+          "quantity": 20,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD",
+          "note": "Gold ETF"
+        }
+      },
+      "total_value": 0,
+      "percentage": 0
+    },
+    "Retirement": {
+      "name": "Retirement Account",
+      "type": "retirement",
+      "holdings": {
+        "IEF": {
+          "quantity": 30,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD",
+          "note": "7-10yr Treasury bond ETF"
+        }
+      },
+      "total_value": 0,
+      "percentage": 0
+    },
+    "Crypto": {
+      "name": "Crypto Wallet",
+      "type": "crypto",
+      "holdings": {
+        "BTC": {
+          "quantity": 0.1,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD"
+        },
+        "ETH": {
+          "quantity": 1.0,
+          "current_price": 0,
+          "value": 0,
+          "currency": "USD"
+        }
+      },
+      "total_value": 0,
+      "percentage": 0
+    }
+  }
+}

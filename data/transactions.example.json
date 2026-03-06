@@ -1,0 +1,44 @@
+{
+  "transactions": [
+    {
+      "date": "2026-01-15",
+      "type": "deposit",
+      "account": "Brokerage",
+      "ticker": null,
+      "quantity": null,
+      "price_usd": null,
+      "amount_usd": 5000.0,
+      "note": "Monthly capital injection"
+    },
+    {
+      "date": "2026-01-15",
+      "type": "buy",
+      "account": "Brokerage",
+      "ticker": "IVV",
+      "quantity": 9.5,
+      "price_usd": 520.0,
+      "amount_usd": 4940.0,
+      "note": "S&P 500 DCA"
+    },
+    {
+      "date": "2026-02-10",
+      "type": "sell",
+      "account": "Brokerage",
+      "ticker": "QQQ",
+      "quantity": 5,
+      "price_usd": 480.0,
+      "amount_usd": 2400.0,
+      "note": "Rebalancing — trim tech exposure"
+    },
+    {
+      "date": "2026-02-10",
+      "type": "buy",
+      "account": "Brokerage",
+      "ticker": "IAU",
+      "quantity": 17,
+      "price_usd": 47.2,
+      "amount_usd": 802.4,
+      "note": "Adding gold allocation"
+    }
+  ]
+}

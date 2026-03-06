@@ -1,0 +1,8 @@
+{
+  "_note": "This is an example snapshot. Real snapshots are named YYYY-MM-DD.json and created by: python3 scripts/save_snapshot.py",
+  "last_updated": "2026-01-01T00:00:00",
+  "total_value_usd": 10000.0,
+  "total_value_ils": 37000.0,
+  "exchange_rate": { "usd_to_ils": 3.7 },
+  "accounts": {}
+}

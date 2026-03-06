@@ -18,6 +18,27 @@ export function getDeposits(): DepositsData {
   return JSON.parse(raw);
 }
 
+export interface AppConfig {
+  base_currency: string;
+  expense_basket: Record<string, number>;
+  display: {
+    show_ils: boolean;
+    show_combined: boolean;
+  };
+}
+
+export function getConfig(): AppConfig {
+  const filePath = path.join(DATA_DIR, 'config.json');
+  if (!fs.existsSync(filePath)) {
+    return {
+      base_currency: 'USD',
+      expense_basket: { USD: 1.0 },
+      display: { show_ils: false, show_combined: false },
+    };
+  }
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+}
+
 export function getTargets(): { allocations: Record<string, number>; tickers: Record<string, string> } {
   const filePath = path.join(DATA_DIR, 'targets.json');
   if (!fs.existsSync(filePath)) {

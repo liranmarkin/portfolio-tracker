@@ -6,6 +6,7 @@ venv/
 
 # Real holdings data — stored in your private repo, not here
 data/holdings.json
+data/config.json
 data/snapshots/*.json
 !data/snapshots/example.json
 data/deposits.json

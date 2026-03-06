@@ -1,4 +1,4 @@
-import { getPortfolio, getSnapshots, getTargets } from '@/lib/data';
+import { getPortfolio, getSnapshots, getTargets, getConfig } from '@/lib/data';
 import { formatUSD, formatILS, formatTimestamp, formatUSDPrecise, pnlColor } from '@/lib/format';
 import { NetWorthChart } from '@/components/charts/NetWorthChart';
 import { AllocationDonut } from '@/components/charts/AllocationDonut';
@@ -56,6 +56,17 @@ export default function Dashboard() {
   const portfolio = getPortfolio();
   const snapshots = getSnapshots();
   const targets = getTargets();
+  const config = getConfig();
+
+  // Combined basket value: weighted blend of USD + ILS
+  const basket = config.expense_basket;
+  const combinedValue = Object.entries(basket).reduce((sum, [currency, weight]) => {
+    if (currency === 'USD') return sum + portfolio.total_value_usd * weight;
+    if (currency === 'ILS') return sum + (portfolio.total_value_ils / portfolio.exchange_rate.usd_to_ils) * weight;
+    return sum;
+  }, 0);
+  const showCombined = config.display.show_combined && Object.keys(basket).length > 1;
+  const showIls = config.display.show_ils;
 
   const chartData = [
     ...snapshots.map(s => ({
@@ -86,11 +97,20 @@ export default function Dashboard() {
             <p className="text-sm text-zinc-500 mb-1">Total Portfolio Value</p>
             <p className="text-4xl font-bold tracking-tight">{formatUSD(portfolio.total_value_usd)}</p>
           </div>
-          <div>
-            <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
-            <p className="text-2xl font-semibold text-zinc-400">{formatILS(portfolio.total_value_ils)}</p>
-          </div>
-
+          {showIls && (
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">&nbsp;</p>
+              <p className="text-2xl font-semibold text-zinc-400">{formatILS(portfolio.total_value_ils)}</p>
+            </div>
+          )}
+          {showCombined && (
+            <div>
+              <p className="text-sm text-zinc-500 mb-1">
+                Combined ({Object.entries(basket).map(([c, w]) => `${Math.round(w * 100)}% ${c}`).join(' + ')})
+              </p>
+              <p className="text-2xl font-semibold text-amber-400">{formatUSD(combinedValue)}</p>
+            </div>
+          )}
         </div>
         <p className="text-xs text-zinc-600 mt-2">
           Last updated: {formatTimestamp(portfolio.last_updated)} &middot; Rate: 1 USD = {portfolio.exchange_rate.usd_to_ils} ILS

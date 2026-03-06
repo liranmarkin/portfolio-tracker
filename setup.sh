@@ -57,6 +57,11 @@ if [ ! -f "data/transactions.json" ]; then
     echo "   ✅ Created data/transactions.json (empty)"
 fi
 
+if [ ! -f "data/config.json" ]; then
+    cp data/config.example.json data/config.json
+    echo "   ✅ Created data/config.json — edit to set base currency and expense basket"
+fi
+
 # Install dashboard dependencies
 if command -v node &>/dev/null && [ -d "app" ]; then
     echo ""

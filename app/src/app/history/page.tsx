@@ -75,7 +75,7 @@ export default function HistoryPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">History</h1>
 
-      <HistoryChart data={chartData} />
+      <HistoryChart data={chartData} config={config} rate={rate} />
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,7 +151,21 @@ export default function HistoryPage() {
                 <td className="px-5 py-2.5">{d.account}</td>
                 <td className="px-5 py-2.5 font-medium">{d.ticker}</td>
                 <td className="text-right px-5 py-2.5 text-blue-400 font-medium tabular-nums">
-                  {fmt(d.amount_usd, true)}
+                  {(() => {
+                    // Use stored historical amounts — never recalculate from today's rate
+                    if (config.base_currency === 'blended' && d.amount_ils != null) {
+                      const parts = Object.entries(config.blended).map(([currency, weight]) =>
+                        currency === 'ILS'
+                          ? `₪${Math.round(d.amount_ils! * weight).toLocaleString('en-US')}`
+                          : formatUSD(d.amount_usd * weight)
+                      );
+                      return `+${parts.join(' + ')}`;
+                    }
+                    if (config.base_currency === 'ILS' && d.amount_ils != null) {
+                      return `+₪${Math.round(d.amount_ils).toLocaleString('en-US')}`;
+                    }
+                    return `+${formatUSD(d.amount_usd)}`;
+                  })()}
                 </td>
               </tr>
             ))}

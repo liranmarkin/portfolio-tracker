@@ -158,7 +158,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <NetWorthChart data={chartData} />
+        <NetWorthChart data={chartData} config={config} rate={rate} />
         <AllocationDonut data={allocation} title="Allocation by Asset Type" />
       </div>
 

@@ -46,7 +46,16 @@ export function getTransactions(): TransactionsData {
     return { transactions: [] };
   }
   const raw = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(raw);
+  const data = JSON.parse(raw);
+  // Normalize field names: data may use `action` instead of `type`,
+  // `notes` instead of `note`, `price` instead of `price_usd`
+  const transactions = (data.transactions ?? []).map((tx: Record<string, unknown>) => ({
+    ...tx,
+    type: tx.type ?? tx.action,
+    note: tx.note ?? tx.notes,
+    price_usd: tx.price_usd ?? tx.price,
+  }));
+  return { transactions };
 }
 
 export function getSnapshots(): SnapshotEntry[] {

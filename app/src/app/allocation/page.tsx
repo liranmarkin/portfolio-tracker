@@ -104,48 +104,72 @@ export default function AllocationPage() {
     .sort((a, b) => b.value - a.value);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Allocation</h1>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AllocationDonut data={categoryData} title="Allocation by Asset Type" config={config} rate={rate} />
-        <AllocationDonut data={tickerData} title="Allocation by Ticker" config={config} rate={rate} />
-        <AccountBar data={accountData} />
+    <div className="space-y-8">
+      {/* Current Allocation Section */}
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <h1 className="text-2xl font-bold">Allocation</h1>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-400 border border-emerald-800">CURRENT</span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AllocationDonut data={categoryData} title="By Asset Type (Current)" config={config} rate={rate} />
+          <AllocationDonut data={tickerData} title="By Ticker (Current)" config={config} rate={rate} />
+          <AccountBar data={accountData} />
+        </div>
       </div>
 
-      <TargetVsActual data={targetVsActual} />
-
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-        <div className="px-5 py-3 border-b border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-400">Target vs Actual Detail</h3>
+      {/* Target vs Actual Section */}
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-semibold">Target vs Actual</h2>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">🎯 TARGET COMPARISON</span>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-xs text-zinc-500 uppercase tracking-wider">
-              <th className="text-left px-5 py-2.5">Category</th>
-              <th className="text-right px-5 py-2.5">Target</th>
-              <th className="text-right px-5 py-2.5">Actual</th>
-              <th className="text-right px-5 py-2.5">Diff</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-800/50">
-            {targetVsActual.map(row => {
-              const diff = row.actual - row.target;
-              return (
-                <tr key={row.name} className="hover:bg-zinc-800/30 transition-colors">
-                  <td className="px-5 py-2.5 font-medium">{row.name}</td>
-                  <td className="text-right px-5 py-2.5 text-zinc-400">{row.target}%</td>
-                  <td className="text-right px-5 py-2.5">{row.actual}%</td>
-                  <td className={`text-right px-5 py-2.5 font-medium ${
-                    Math.abs(diff) < 2 ? 'text-zinc-400' : diff > 0 ? 'text-emerald-400' : 'text-red-400'
-                  }`}>
-                    {diff >= 0 ? '+' : ''}{diff.toFixed(1)}%
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <TargetVsActual data={targetVsActual} />
+
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden mt-4">
+          <div className="px-5 py-3 border-b border-zinc-800 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-zinc-400">Detail</h3>
+            <span className="text-xs text-zinc-600">— 🎯 Target is your desired allocation</span>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-zinc-500 uppercase tracking-wider">
+                <th className="text-left px-5 py-2.5">Category</th>
+                <th className="text-right px-5 py-2.5">
+                  <span className="inline-flex items-center gap-1">🎯 Target</span>
+                </th>
+                <th className="text-right px-5 py-2.5">
+                  <span className="inline-flex items-center gap-1 text-emerald-500">● Actual</span>
+                </th>
+                <th className="text-right px-5 py-2.5">Diff</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/50">
+              {targetVsActual.map(row => {
+                const diff = row.actual - row.target;
+                const hasTarget = row.target > 0;
+                return (
+                  <tr key={row.name} className="hover:bg-zinc-800/30 transition-colors">
+                    <td className="px-5 py-2.5 font-medium">{row.name}</td>
+                    <td className="text-right px-5 py-2.5">
+                      {hasTarget
+                        ? <span className="text-zinc-400">{row.target}%</span>
+                        : <span className="text-zinc-700 text-xs italic">no target</span>
+                      }
+                    </td>
+                    <td className="text-right px-5 py-2.5 text-emerald-400 font-medium">{row.actual}%</td>
+                    <td className={`text-right px-5 py-2.5 font-medium ${
+                      !hasTarget ? 'text-zinc-600' :
+                      Math.abs(diff) < 2 ? 'text-zinc-400' : diff > 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {hasTarget ? (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%' : '—'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

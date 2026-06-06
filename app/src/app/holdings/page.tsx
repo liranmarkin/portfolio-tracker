@@ -1,5 +1,5 @@
 import { getPortfolio, getConfig } from '@/lib/data';
-import { formatUSD, formatUSDPrecise, formatILS, pnlColor, accountTypeBadgeColor, accountTypeLabel } from '@/lib/format';
+import { formatUSD, formatUSDPrecise, formatILS, pnlColor, accountTypeBadgeColor, accountTypeLabel, priceStaleness, formatTimestamp } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,7 +67,7 @@ export default function HoldingsPage() {
                       {h.name && <div className="text-xs text-zinc-500 truncate max-w-[200px]">{h.name}</div>}
                     </td>
                     <td className="text-right px-5 py-3 text-zinc-300 tabular-nums">
-                      {h.quantity !== undefined ? (
+                      {h.quantity != null ? (
                         h.quantity < 1 ? h.quantity.toFixed(6) : h.quantity.toLocaleString()
                       ) : '—'}
                     </td>
@@ -101,11 +101,35 @@ export default function HoldingsPage() {
                       )}
                     </td>
                     <td className="text-right px-5 py-3">
-                      {h.pending_sell && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
-                          Pending Sell
-                        </span>
-                      )}
+                      <div className="flex flex-col items-end gap-1">
+                        {h.pending_sell && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+                            Pending Sell
+                          </span>
+                        )}
+                        {(() => {
+                          const s = priceStaleness(h.last_priced);
+                          let prefix = '';
+                          let titleSuffix = '';
+                          if (h.manual_price) { prefix = '✋ '; titleSuffix = ' (manual)'; }
+                          else if (h.proxy_synthesized) {
+                            prefix = '🔗 ';
+                            const via = h.proxy?.ticker ?? (h.growth_apr ? `${(h.growth_apr*100).toFixed(2)}% APR` : 'proxy');
+                            titleSuffix = ` (synthesized via ${via})`;
+                          }
+                          const title = h.last_priced
+                            ? `Priced ${formatTimestamp(h.last_priced)}${titleSuffix}`
+                            : 'No price timestamp recorded';
+                          return (
+                            <span
+                              title={title}
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${s.badgeColor}`}
+                            >
+                              {prefix}{s.label}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </td>
                   </tr>
                 );

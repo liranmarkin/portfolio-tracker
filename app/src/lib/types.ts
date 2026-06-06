@@ -16,6 +16,18 @@ export interface Holding {
   pending_sell?: boolean;
   annual_cost_pct?: number;
   breakdown?: Record<string, number>;
+  last_priced?: string;
+  manual_price?: boolean;
+  proxy_synthesized?: boolean;
+  proxy?: {
+    ticker?: string;
+    baseline_price_usd?: number;
+    baseline_fx_usd_ils?: number;
+    baseline_value_ils?: number;
+    baseline_date?: string;
+    rationale?: string;
+  };
+  growth_apr?: number;
 }
 
 export interface Account {

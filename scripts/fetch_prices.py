@@ -47,6 +47,8 @@ COINGECKO_IDS = {
     "DOGE": "dogecoin",
     "ADA": "cardano",
     "AVAX": "avalanche-2",
+    "XAUT": "tether-gold",
+    "PAXG": "pax-gold",
 }
 # ────────────────────────────────────────────────────────────────────────────
 

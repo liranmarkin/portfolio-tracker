@@ -22,6 +22,8 @@ export interface AppConfig {
   /** "USD" | "ILS" | "blended" */
   base_currency: 'USD' | 'ILS' | 'blended';
   blended: Record<string, number>;
+  /** Extra ticker → canonical-asset mappings for P&L (merged over built-in wrapper defaults). */
+  ticker_aliases?: Record<string, string>;
 }
 
 export function getConfig(): AppConfig {

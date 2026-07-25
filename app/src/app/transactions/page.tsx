@@ -1,4 +1,4 @@
-import { getTransactions } from '@/lib/data';
+import { getConfig, getTransactions } from '@/lib/data';
 import { formatUSD, formatDate, pnlColor } from '@/lib/format';
 import { computeRealizedPnl, RealizedPnl } from '@/lib/pnl';
 import { Transaction } from '@/lib/types';
@@ -73,8 +73,9 @@ export default function TransactionsPage() {
   const { transactions } = getTransactions();
 
   // Realized P&L per transaction (FIFO, per account) — computed in original
-  // order, then carried along through sorting/grouping.
-  const pnls = computeRealizedPnl(transactions);
+  // order, then carried along through sorting/grouping. Wrapped-asset tickers
+  // (WBTC → BTC etc.) share one queue; extend via config.json ticker_aliases.
+  const pnls = computeRealizedPnl(transactions, getConfig().ticker_aliases);
   const rows = transactions.map((tx, i) => ({ tx, pnl: pnls[i] }));
 
   // Sort newest first
@@ -186,8 +187,10 @@ export default function TransactionsPage() {
       {sorted.length > 0 && (
         <p className="text-xs text-zinc-600">
           P&L is realized gain/loss computed FIFO <em>within each account</em> (USD, fee-inclusive amounts as recorded).
-          † = partial cost basis: some sold units predate recorded history. Swaps are treated as in-kind disposals.
-          This is an economic view — not tax advice; tax P&L may use different lot ordering, currency, and rules.
+          Wrapped variants count as their base asset (WBTC/cbBTC = BTC, stETH/weETH = ETH); swapping between variants
+          of the same asset realizes nothing. Cross-asset swaps are in-kind disposals. † = partial cost basis: some
+          sold units predate recorded history. This is an economic view — not tax advice; tax P&L may use different
+          lot ordering, currency, and rules.
         </p>
       )}
     </div>

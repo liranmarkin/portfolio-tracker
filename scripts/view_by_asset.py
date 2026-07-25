@@ -87,10 +87,32 @@ def view_by_asset(data_dir: Path):
                 print(f"  {ticker:<30} ₪{ils_val:,.2f}  =  ${usd_val:,.2f}")
 
     grand_total = portfolio.get("total_value_usd", stocks_total + crypto_total + ils_total)
+
+    # Category summary via targets.json ticker mapping (XAUT counts as Gold,
+    # cash-in-transit as Cash, etc.) — falls back to coarse buckets if absent.
+    targets_file = data_dir / "targets.json"
     print(f"\n{'═'*65}")
-    print(f"  Stocks/ETFs:   ${stocks_total:>14,.2f}  ({stocks_total/grand_total*100:.1f}%)")
-    print(f"  Crypto:        ${crypto_total:>14,.2f}  ({crypto_total/grand_total*100:.1f}%)")
-    print(f"  ILS Funds:     ${ils_total:>14,.2f}  ({ils_total/grand_total*100:.1f}%)")
+    if targets_file.exists():
+        with open(targets_file) as f:
+            targets = json.load(f)
+        ticker_cat = targets.get("tickers", {})
+        alloc = targets.get("allocations", {})
+        by_cat = defaultdict(float)
+        for account in portfolio["accounts"].values():
+            for ticker, h in account.get("holdings", {}).items():
+                val = h.get("value", 0)
+                if h.get("currency") == "ILS":
+                    val /= usd_to_ils
+                cat = ticker_cat.get(ticker) or ("Cash" if "FUND" in ticker else "Other")
+                by_cat[cat] += val
+        for cat in sorted(by_cat, key=by_cat.get, reverse=True):
+            pct = by_cat[cat] / grand_total * 100
+            tgt = f"  (target {alloc[cat]*100:.0f}%)" if cat in alloc else ""
+            print(f"  {cat:<14} ${by_cat[cat]:>14,.2f}  ({pct:.1f}%){tgt}")
+    else:
+        print(f"  Stocks/ETFs:   ${stocks_total:>14,.2f}  ({stocks_total/grand_total*100:.1f}%)")
+        print(f"  Crypto:        ${crypto_total:>14,.2f}  ({crypto_total/grand_total*100:.1f}%)")
+        print(f"  ILS Funds:     ${ils_total:>14,.2f}  ({ils_total/grand_total*100:.1f}%)")
     print(f"{'─'*65}")
     print(f"  TOTAL (USD):   ${grand_total:>14,.2f}")
     print(f"  TOTAL (ILS):   ₪{grand_total * usd_to_ils:>14,.2f}")

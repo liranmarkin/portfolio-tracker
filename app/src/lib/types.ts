@@ -86,14 +86,25 @@ export interface DepositsData {
   last_updated: string;
 }
 
+export type TransactionType = 'buy' | 'sell' | 'deposit' | 'withdrawal' | 'swap' | 'income';
+
 export interface Transaction {
   date: string;
-  type: 'buy' | 'sell' | 'deposit' | 'withdrawal';
+  type: TransactionType;
   account: string;
   ticker: string | null;
   quantity: number | null;
   price_usd: number | null;
   amount_usd: number | null;
+  /** Swap-only fields: an in-kind exchange (disposal of `from_ticker`, acquisition of `to_ticker`). */
+  from_ticker?: string | null;
+  to_ticker?: string | null;
+  from_quantity?: number | null;
+  to_quantity?: number | null;
+  from_amount_usd?: number | null;
+  to_amount_usd?: number | null;
+  /** Internal transfer between own accounts — excluded from capital-flow summary stats. */
+  internal?: boolean;
   note?: string;
 }
 

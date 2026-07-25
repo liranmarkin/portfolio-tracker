@@ -48,10 +48,11 @@ export function getTransactions(): TransactionsData {
   const raw = fs.readFileSync(filePath, 'utf-8');
   const data = JSON.parse(raw);
   // Normalize field names: data may use `action` instead of `type`,
-  // `notes` instead of `note`, `price` instead of `price_usd`
+  // `notes` instead of `note`, `price` instead of `price_usd`.
+  // Type is lowercased so legacy "BUY"/"SELL"/"SWAP" rows match the canonical union.
   const transactions = (data.transactions ?? []).map((tx: Record<string, unknown>) => ({
     ...tx,
-    type: tx.type ?? tx.action,
+    type: String(tx.type ?? tx.action ?? '').toLowerCase(),
     note: tx.note ?? tx.notes,
     price_usd: tx.price_usd ?? tx.price,
   }));

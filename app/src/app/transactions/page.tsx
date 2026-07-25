@@ -80,11 +80,11 @@ export default function TransactionsPage() {
   // Same-asset wrapper swaps (WBTC → BTC) are pure repackaging — hidden from
   // the list entirely; they remain in the data file as an audit trail.
   const rows = transactions
-    .map((tx, i) => ({ tx, pnl: pnls[i] }))
+    .map((tx, i) => ({ tx, pnl: pnls[i], i }))
     .filter(({ tx }) => !isSameAssetSwap(tx, aliases));
 
-  // Sort newest first
-  const sorted = [...rows].sort((a, b) => b.tx.date.localeCompare(a.tx.date));
+  // Sort newest first; within a date, most recently recorded on top
+  const sorted = [...rows].sort((a, b) => b.tx.date.localeCompare(a.tx.date) || b.i - a.i);
 
   // Summary stats — internal transfers between own accounts are excluded
   const external = sorted.filter(r => !r.tx.internal);

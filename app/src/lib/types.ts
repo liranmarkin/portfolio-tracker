@@ -105,6 +105,12 @@ export interface Transaction {
   to_amount_usd?: number | null;
   /** Internal transfer between own accounts — excluded from capital-flow summary stats. */
   internal?: boolean;
+  /**
+   * Swap-only: carry the FIFO cost basis of the disposed asset into the
+   * acquired asset instead of realizing P&L (e.g. a tax-deferred in-kind
+   * exchange). The gain surfaces only when the acquired asset is disposed.
+   */
+  basis_carryover?: boolean;
   note?: string;
 }
 

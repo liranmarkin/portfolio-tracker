@@ -1,6 +1,6 @@
 import { getConfig, getTransactions } from '@/lib/data';
 import { formatUSD, formatDate, pnlColor } from '@/lib/format';
-import { computeRealizedPnl, RealizedPnl } from '@/lib/pnl';
+import { computeRealizedPnl, isSameAssetSwap, RealizedPnl } from '@/lib/pnl';
 import { Transaction } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -75,8 +75,13 @@ export default function TransactionsPage() {
   // Realized P&L per transaction (FIFO, per account) — computed in original
   // order, then carried along through sorting/grouping. Wrapped-asset tickers
   // (WBTC → BTC etc.) share one queue; extend via config.json ticker_aliases.
-  const pnls = computeRealizedPnl(transactions, getConfig().ticker_aliases);
-  const rows = transactions.map((tx, i) => ({ tx, pnl: pnls[i] }));
+  const aliases = getConfig().ticker_aliases;
+  const pnls = computeRealizedPnl(transactions, aliases);
+  // Same-asset wrapper swaps (WBTC → BTC) are pure repackaging — hidden from
+  // the list entirely; they remain in the data file as an audit trail.
+  const rows = transactions
+    .map((tx, i) => ({ tx, pnl: pnls[i] }))
+    .filter(({ tx }) => !isSameAssetSwap(tx, aliases));
 
   // Sort newest first
   const sorted = [...rows].sort((a, b) => b.tx.date.localeCompare(a.tx.date));

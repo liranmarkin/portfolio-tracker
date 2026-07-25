@@ -69,6 +69,17 @@ function makeCanonical(aliases?: Record<string, string>): (ticker: string) => st
   };
 }
 
+/**
+ * True for swaps between variants of the same canonical asset (WBTC → BTC,
+ * stETH → wstETH): pure repackaging with no economic effect. The UI hides
+ * these rows; the engine ignores them.
+ */
+export function isSameAssetSwap(tx: Transaction, aliases?: Record<string, string>): boolean {
+  if (tx.type !== 'swap' || !tx.from_ticker || !tx.to_ticker) return false;
+  const canonical = makeCanonical(aliases);
+  return canonical(tx.from_ticker) === canonical(tx.to_ticker);
+}
+
 function pushLot(queues: Map<string, Lot[]>, account: string, ticker: string, qty: number, totalCost: number) {
   if (qty <= EPS) return;
   const key = lotKey(account, ticker);
@@ -173,11 +184,25 @@ export function computeRealizedPnl(
         if (from && to && from === to) break;
         const fromQty = tx.from_quantity ?? 0;
         const fromAmount = tx.from_amount_usd ?? null;
+        const toQty = tx.to_quantity ?? 0;
+        const toAmount = tx.to_amount_usd ?? fromAmount;
+        if (tx.basis_carryover) {
+          // Deferred exchange: no P&L now — the old lots' cost migrates into
+          // the acquired asset, so the gain realizes when THAT is disposed.
+          let carriedCost: number | null = null;
+          if (from && fromQty > EPS) {
+            const { matched, cost } = consumeLots(queues, tx.account, from, fromQty);
+            if (matched > EPS) carriedCost = cost;
+          }
+          if (to && toQty > EPS) {
+            const basis = carriedCost ?? toAmount;
+            if (basis != null) pushLot(queues, tx.account, to, toQty, basis);
+          }
+          break;
+        }
         if (from && fromQty > EPS && fromAmount != null) {
           results[i] = disposal(queues, tx.account, from, fromQty, fromAmount);
         }
-        const toQty = tx.to_quantity ?? 0;
-        const toAmount = tx.to_amount_usd ?? fromAmount;
         if (to && toQty > EPS && toAmount != null) {
           pushLot(queues, tx.account, to, toQty, toAmount);
         }

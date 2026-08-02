@@ -206,7 +206,8 @@ def view(data_dir: Path):
         print(f"  {'Date':<12} {'Account':<18} {'Ticker':<20} {'Amount':>12}")
         print(f"  {'─'*12} {'─'*18} {'─'*20} {'─'*12}")
         for d in sorted(deposits, key=lambda x: x["date"]):
-            print(f"  {d['date']:<12} {d['account']:<18} {d['ticker']:<20} ${d['amount_usd']:>10,.2f}")
+            ticker = d.get("ticker") or "—"
+            print(f"  {d['date']:<12} {d['account']:<18} {ticker:<20} ${d['amount_usd']:>10,.2f}")
     else:
         print("  No deposits recorded.")
 
@@ -216,7 +217,8 @@ def view(data_dir: Path):
         print(f"  {'Date':<12} {'Account':<18} {'Ticker':<20} {'Amount':>12}")
         print(f"  {'─'*12} {'─'*18} {'─'*20} {'─'*12}")
         for w in sorted(withdrawals, key=lambda x: x["date"]):
-            print(f"  {w['date']:<12} {w['account']:<18} {w['ticker']:<20} ${w['amount_usd']:>10,.2f}")
+            ticker = w.get("ticker") or "—"
+            print(f"  {w['date']:<12} {w['account']:<18} {ticker:<20} ${w['amount_usd']:>10,.2f}")
 
     summary = data.get("summary", {})
     total_dep = summary.get("total_deposited_usd", 0)
